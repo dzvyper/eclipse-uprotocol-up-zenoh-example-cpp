@@ -25,27 +25,53 @@ project(pubsub VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(spdlog REQUIRED)
 find_package(up-cpp REQUIRED)
+find_package(up-transport-zenoh-cpp REQUIRED)
+find_package(zenohcpp REQUIRED)
 
 add_definitions(-DSPDLOG_FMT_EXTERNAL)
 
+get_filename_component(ZENOH_CONF "./DEFAULT_CONFIG.json5" REALPATH)
+
 # sub
 add_executable(sub src/main_sub.cpp src/UTransportDomainSockets.cpp)
+
+target_compile_definitions(sub PRIVATE BUILD_REALPATH_ZENOH_CONF=\"${ZENOH_CONF}\")
+
 target_link_libraries(sub
     PUBLIC
         spdlog::spdlog
         up-cpp::up-cpp
-        up-core-api::up-core-api)
+        up-core-api::up-core-api
+        up-transport-zenoh-cpp::up-transport-zenoh-cpp
+        zenohcpp::lib)
+
 target_include_directories(sub
-	PRIVATE
+    PUBLIC
+    ${zenohc_INCLUDE_DIR}
+    ${zenohcpp_INCLUDE_DIR}
+    ${up-transport-zenoh-cpp_INCLUDE_DIR}
+    PRIVATE
 	include)
 
 # pub
-add_executable(pub src/main_pub.cpp src/UTransportDomainSockets.cpp)
+
+
+add_executable(pub src/main_pub.cpp )
+
+target_compile_definitions(pub PRIVATE BUILD_REALPATH_ZENOH_CONF=\"${ZENOH_CONF}\")
+
 target_link_libraries(pub
     PUBLIC
         spdlog::spdlog
         up-cpp::up-cpp
-        up-core-api::up-core-api)
+        up-core-api::up-core-api
+        up-transport-zenoh-cpp::up-transport-zenoh-cpp
+        zenohcpp::lib)
+
 target_include_directories(pub
-	PRIVATE
+	PUBLIC
+    ${zenohc_INCLUDE_DIR}
+    ${zenohcpp_INCLUDE_DIR}
+    ${up-transport-zenoh-cpp_INCLUDE_DIR}
+    PRIVATE
 	include)

@@ -32,12 +32,17 @@
 #include <cstring>
 #include <iostream>
 
-#include "UTransportDomainSockets.h"
+//#include "UTransportDomainSockets.h"
+#include "up-transport-zenoh-cpp/ZenohUTransport.h"
 #include "common.h"
 
 using namespace uprotocol::datamodel::builder;
 using namespace uprotocol::communication;
 using namespace uprotocol::v1;
+using namespace uprotocol;
+
+constexpr std::string_view ZENOH_CONFIG_FILE = BUILD_REALPATH_ZENOH_CONF;
+
 
 bool gTerminate = false;
 
@@ -68,6 +73,15 @@ uint8_t getCounter() {
 	return counter;
 }
 
+
+std::shared_ptr<transport::UTransport> getTransport(
+    const v1::UUri& uuri = getUUri(0)) 
+{
+	return std::make_shared<transport::ZenohUTransport>(uuri,
+	                                                    ZENOH_CONFIG_FILE);
+}
+
+
 /* The sample pub applications demonstrates how to send data using uTransport -
  * There are three topics that are published - random number, current time and a
  * counter */
@@ -84,7 +98,11 @@ int main(int argc, char** argv) {
 	auto topic_time = getTimeUUri();
 	auto topic_random = getRandomUUri();
 	auto topic_counter = getCounterUUri();
-	auto transport = std::make_shared<UTransportDomainSockets>(source);
+	
+	// Get the zenoh transport
+	auto transport = getTransport();
+	
+	
 	Publisher publish_time(transport, std::move(topic_time),
 	                       UPayloadFormat::UPAYLOAD_FORMAT_TEXT);
 	Publisher publish_random(transport, std::move(topic_random),
