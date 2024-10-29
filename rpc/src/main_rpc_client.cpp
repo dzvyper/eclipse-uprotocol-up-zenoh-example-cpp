@@ -29,12 +29,16 @@
 #include <csignal>
 #include <iostream>
 
-#include "SocketUTransport.h"
+//#include "SocketUTransport.h"
+#include "up-transport-zenoh-cpp/ZenohUTransport.h"
 #include "common.h"
 
 using namespace uprotocol::v1;
 using namespace uprotocol::communication;
 using namespace uprotocol::datamodel::builder;
+using namespace uprotocol;
+
+constexpr std::string_view ZENOH_CONFIG_FILE = BUILD_REALPATH_ZENOH_CONF;
 
 bool gTerminate = false;
 
@@ -57,14 +61,14 @@ void OnReceive(RpcClient::MessageOrStatus expected) {
 
 	if (message.attributes().payload_format() !=
 	    UPayloadFormat::UPAYLOAD_FORMAT_RAW) {
-		spdlog::error("Received message has unexpected payload format:\n{}",
-		              message.DebugString());
+		spdlog::error("Received message has unexpected payload format: {} \n{}",
+		              (int)(message.attributes().payload_format()), message.DebugString());
 		return;
 	}
 
 	if (message.payload().size() != (sizeof(uint64_t) * 3)) {
-		spdlog::error("Received message has unexpected payload size:\n{}",
-		              message.DebugString());
+		spdlog::error("Received message has unexpected payload size: {} \n{}",
+		              message.payload().size(), message.DebugString());
 		return;
 	}
 
@@ -74,6 +78,13 @@ void OnReceive(RpcClient::MessageOrStatus expected) {
 
 	const uint64_t* pdata = (uint64_t*)message.payload().data();
 	spdlog::info("Received payload: {} - {}, {}", pdata[0], pdata[1], pdata[2]);
+}
+
+std::shared_ptr<transport::UTransport> getTransport(
+    const v1::UUri& uuri = getRpcUUri(0)) 
+{
+	return std::make_shared<transport::ZenohUTransport>(uuri,
+	                                                    ZENOH_CONFIG_FILE);
 }
 
 /* The sample RPC client applications demonstrates how to send RPC requests and
@@ -87,10 +98,10 @@ int main(int argc, char** argv) {
 
 	UUri source = getRpcUUri(0);
 	UUri method = getRpcUUri(12);
-	auto transport = std::make_shared<SocketUTransport>(source);
+	auto transport = getTransport(source);
 	auto client =
 	    RpcClient(transport, std::move(method), UPriority::UPRIORITY_CS4,
-	              std::chrono::milliseconds(500));
+	              std::chrono::milliseconds(1500));
 	RpcClient::InvokeHandle handle;
 
 	while (!gTerminate) {

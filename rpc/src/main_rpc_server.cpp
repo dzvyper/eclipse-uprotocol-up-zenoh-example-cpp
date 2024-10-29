@@ -29,12 +29,16 @@
 #include <csignal>
 #include <iostream>
 
-#include "SocketUTransport.h"
+//#include "SocketUTransport.h"
+#include "up-transport-zenoh-cpp/ZenohUTransport.h"
 #include "common.h"
 
 using namespace uprotocol::v1;
 using namespace uprotocol::communication;
 using namespace uprotocol::datamodel::builder;
+using namespace uprotocol;
+
+constexpr std::string_view ZENOH_CONFIG_FILE = BUILD_REALPATH_ZENOH_CONF;
 
 bool gTerminate = false;
 
@@ -54,12 +58,14 @@ std::optional<uprotocol::datamodel::builder::Payload> OnReceive(
 		return {};
 	}
 
+#if 0
 	// Validate message has no payload (no payload expected)
 	if (message.has_payload()) {
 		spdlog::error("Received message has non-empty payload\n{}",
 		              message.DebugString());
 		return {};
 	}
+#endif
 
 	// Received request with empty payload, generate response with
 	// sequence number, current time, and random value
@@ -74,16 +80,27 @@ std::optional<uprotocol::datamodel::builder::Payload> OnReceive(
 
 	Payload payload(reinterpret_cast<std::vector<uint8_t>&>(payload_data),
 	                UPayloadFormat::UPAYLOAD_FORMAT_RAW);
+
+
 	spdlog::info("Sending payload:  {} - {}, {}", payload_data[0],
 	             payload_data[1], payload_data[2]);
 
 	return payload;
 }
 
+std::shared_ptr<transport::UTransport> getTransport(
+    const v1::UUri& uuri = getRpcUUri(0)) 
+{
+	return std::make_shared<transport::ZenohUTransport>(uuri,
+	                                                    ZENOH_CONFIG_FILE);
+}
+
+
 /* The sample RPC server applications demonstrates how to receive RPC requests
  * and send a response back to the client -
  * The response in this example will be the current time */
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
 	(void)argc;
 	(void)argv;
 
@@ -91,8 +108,11 @@ int main(int argc, char** argv) {
 
 	UUri source = getRpcUUri(0);
 	UUri method = getRpcUUri(12);
-	auto transport = std::make_shared<SocketUTransport>(source);
-	auto server = RpcServer::create(transport, method, OnReceive);
+	auto transport = getTransport(source);
+	auto server = RpcServer::create(transport, 
+									method, 
+									OnReceive, 
+									UPayloadFormat::UPAYLOAD_FORMAT_RAW);
 
 	if (!server.has_value()) {
 		spdlog::error("Failed to create RPC server: {}",
@@ -105,5 +125,6 @@ int main(int argc, char** argv) {
 	}
 
 	return 0;
+
 }
 

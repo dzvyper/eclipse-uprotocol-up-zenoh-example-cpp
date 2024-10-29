@@ -25,30 +25,50 @@ project(rpc VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(spdlog REQUIRED)
 find_package(up-cpp REQUIRED)
-find_package(up-transport-socket-cpp REQUIRED)
+find_package(up-transport-zenoh-cpp REQUIRED)
+find_package(zenohcpp REQUIRED)
 
 add_definitions(-DSPDLOG_FMT_EXTERNAL)
 
+get_filename_component(ZENOH_CONF "./DEFAULT_CONFIG.json5" REALPATH)
+
+
 # rpc client
 add_executable(rpc_client src/main_rpc_client.cpp)
+
+target_compile_definitions(rpc_client PRIVATE BUILD_REALPATH_ZENOH_CONF=\"${ZENOH_CONF}\")
+
 target_link_libraries(rpc_client
     PUBLIC
-	spdlog::spdlog
+        spdlog::spdlog
         up-cpp::up-cpp
         up-core-api::up-core-api
-	up-transport-socket-cpp::up-transport-socket-cpp)
+        up-transport-zenoh-cpp::up-transport-zenoh-cpp
+        zenohcpp::lib)
 target_include_directories(rpc_client 
+    PUBLIC
+        ${zenohc_INCLUDE_DIR}
+        ${zenohcpp_INCLUDE_DIR}
+        ${up-transport-zenoh-cpp_INCLUDE_DIR}
     PRIVATE
         include)
 
 # rpc server
 add_executable(rpc_server src/main_rpc_server.cpp)
+
+target_compile_definitions(rpc_server PRIVATE BUILD_REALPATH_ZENOH_CONF=\"${ZENOH_CONF}\")
+
 target_link_libraries(rpc_server
     PUBLIC
-	spdlog::spdlog
+        spdlog::spdlog
         up-cpp::up-cpp
         up-core-api::up-core-api
-	up-transport-socket-cpp::up-transport-socket-cpp)
+        up-transport-zenoh-cpp::up-transport-zenoh-cpp
+        zenohcpp::lib)
 target_include_directories(rpc_server 
+    PUBLIC
+        ${zenohc_INCLUDE_DIR}
+        ${zenohcpp_INCLUDE_DIR}
+        ${up-transport-zenoh-cpp_INCLUDE_DIR}
     PRIVATE
         include)

@@ -32,4 +32,4 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 add_subdirectory(pubsub)
-#add_subdirectory(rpc)
+add_subdirectory(rpc)
